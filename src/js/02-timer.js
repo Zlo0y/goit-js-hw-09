@@ -2,7 +2,7 @@ import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import Notiflix from 'notiflix';
 
-const timer = document.querySelector(".timer");
+const dateTimePicker = document.querySelector("#datetime-picker");
 const startBtn = document.querySelector("button[data-start]");
 const daysInput = document.querySelector("span[data-days]");
 const hoursInput = document.querySelector("span[data-hours]");
@@ -11,45 +11,47 @@ const secondsInput = document.querySelector("span[data-seconds]");
 
 
 startBtn.disabled = "true";
-startBtn.addEventListener("click", () => {
-    
-    function addLeadingZero() {
-        const { days, hours, minutes, seconds } = convertMs(dateDifference);
-        
-        daysInput.textContent = days.toString().length < 2 ? `0${days}` : days;
-        hoursInput.textContent = hours.toString().length < 2 ? `0${hours}` : hours;
-        minutesInput.textContent = minutes.toString().length < 2 ? `0${minutes}` : minutes;
-        secondsInput.textContent = seconds.toString().length < 2 ? `0${seconds}` : seconds;
-    }
-    addLeadingZero();
-    setInterval(() => {
-        addLeadingZero();
-    }, 1000);
-});
 
-let dateDifference;
+function addLeadingZero(value) {
+  return value.toString().padStart(2, '0');
+}
+
+const setCountdownTimer = () => {
+    const timerId = setInterval(() => {
+        const countdown = new Date(dateTimePicker.value) - new Date();
+        startBtn.disabled = "true";
+        if (countdown >= 0) {
+            dateTimePicker.disabled = true;
+
+            const timeObject = convertMs(countdown);
+            daysInput.textContent = addLeadingZero(timeObject.days);
+            hoursInput.textContent = addLeadingZero(timeObject.hours);
+            minutesInput.textContent = addLeadingZero(timeObject.minutes);
+            secondsInput.textContent = addLeadingZero(timeObject.seconds);
+        } else {
+            clearInterval(timerId);
+            Notiflix.Notify.success('Finish!', {
+                position: 'left-top',
+            });
+            dateTimePicker.disabled = false;
+        }
+    }, 1000)
+};
+
+startBtn.addEventListener("click", (setCountdownTimer));
 
 const options = {
     enableTime: true,
     time_24hr: true,
     defaultDate: new Date(),
     minuteIncrement: 1,
-    onClose(dateDifferences) {
-        function actualTime() {
-            const dateNow = new Date().getTime();
-            dateDifference = dateDifferences[0].getTime() - dateNow;
+    onClose(selectedDates) {
+        if(selectedDates[0] < new Date()) {
+            Notiflix.Notify.failure('Please choose a date in the future');        
+            startBtn.disabled = true;
+            return;
         }
-        actualTime();
-        setInterval(() => {
-            actualTime();
-        }, 1000);
-
-        if(dateDifference <= 0) {
-            Notiflix.Notify.failure('Please choose a date in the future');
-            startBtn.disabled = "true";
-        } else {        
-            startBtn.removeAttribute("disabled")
-        }
+        startBtn.disabled = false; 
     },
 };
 
